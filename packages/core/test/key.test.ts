@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   cacheKeyWithQuery,
+  createCacheKey,
   createPageContext,
   defaultCacheKey,
   definePage,
@@ -37,5 +38,20 @@ describe('cache key generation', () => {
   it('joins cache key parts and appends sorted query params', () => {
     expect(joinCacheKey('pc', 'movie', 42, undefined, '')).toBe('pc:movie:42')
     expect(cacheKeyWithQuery('pc:channel', new URLSearchParams('b=2&a=1'))).toBe('pc:channel:a=1&b=2')
+  })
+
+  it('creates route cache keys from route params query and context', () => {
+    expect(
+      createCacheKey({
+        route: '/movies/:id',
+        params: { id: 42 },
+        query: new URLSearchParams('b=2&a=1'),
+        context: {
+          lang: 'en',
+          theme: 'dark',
+          userId: 'u1',
+        },
+      }),
+    ).toBe('page:/movies/:id|params:id=42|query:a=1&b=2|ctx:lang=en&theme=dark&userId=u1')
   })
 })

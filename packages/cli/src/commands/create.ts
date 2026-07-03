@@ -50,11 +50,11 @@ async function writeProject(targetDir: string, name: string): Promise<void> {
   await Promise.all([
     writeJson(path.join(targetDir, 'package.json'), packageJson(name)),
     writeFile(path.join(targetDir, 'tsconfig.json'), tsconfig(), 'utf8'),
-    writeFile(path.join(targetDir, 'src/app.tsx'), appSource(), 'utf8'),
-    writeFile(path.join(targetDir, 'src/pages/home.tsx'), homeSource(), 'utf8'),
-    writeFile(path.join(targetDir, 'src/components/Layout.tsx'), layoutSource(), 'utf8'),
-    writeFile(path.join(targetDir, 'src/components/Button.tsx'), buttonSource(), 'utf8'),
-    writeFile(path.join(targetDir, 'src/static/actions.js'), actionsSource(), 'utf8'),
+    writeFile(path.join(targetDir, 'src/app.ts'), appSource(), 'utf8'),
+    writeFile(path.join(targetDir, 'src/pages/index.page.tsx'), homeSource(), 'utf8'),
+    writeFile(path.join(targetDir, 'src/pages/layout.tsx'), layoutSource(), 'utf8'),
+    writeFile(path.join(targetDir, 'src/components/Counter.tsx'), counterSource(), 'utf8'),
+    writeFile(path.join(targetDir, 'src/static/islands.js'), islandsSource(), 'utf8'),
   ])
 }
 
@@ -71,7 +71,6 @@ function packageJson(name: string): Record<string, unknown> {
     },
     dependencies: {
       '@hono/node-server': '^2.0.6',
-      '@pagemint/actions': '^0.1.0',
       '@pagemint/cache-memory': '^0.1.0',
       '@pagemint/hono': '^0.1.0',
       hono: '^4.12.27',
@@ -107,36 +106,23 @@ function tsconfig(): string {
 
 function appSource(): string {
   return `import { serve } from '@hono/node-server'
-import { createPageMintApp, definePage } from '@pagemint/hono'
 import { memoryCache } from '@pagemint/cache-memory'
-
-import { HomePage } from './pages/home.js'
+import { createPageMintApp, registerFileRoutes } from '@pagemint/hono'
+import { readFile } from 'node:fs/promises'
 
 const app = createPageMintApp({
   cache: memoryCache(),
 })
 
-app.page(
-  definePage({
-    path: '/',
-    cache: {
-      ttl: 60_000,
-      staleTtl: 5 * 60_000,
-    },
-    async load() {
-      return {
-        title: 'PageMint',
-        items: ['Hono', 'Server JSX', 'Route HTML Cache'],
-      }
-    },
-    render({ data }) {
-      return <HomePage title={data.title} items={data.items} />
-    },
-  }),
-)
+app.addDependency('movie:featured', 'homepage')
+app.addDependency('movie:featured', 'search')
 
-app.get('/static/actions.js', async (c) => {
-  return c.text(await import('node:fs/promises').then((fs) => fs.readFile('src/static/actions.js', 'utf8')), 200, {
+await registerFileRoutes(app, {
+  pagesDir: new URL('./pages', import.meta.url),
+})
+
+app.get('/static/islands.js', async (c) => {
+  return c.text(await readFile('src/static/islands.js', 'utf8'), 200, {
     'content-type': 'text/javascript; charset=UTF-8',
   })
 })
@@ -150,51 +136,85 @@ export default app
 }
 
 function homeSource(): string {
-  return `import { Button } from '../components/Button.js'
-import { Layout } from '../components/Layout.js'
+  return `import { Island } from '@pagemint/hono'
 
-export interface HomePageProps {
+import { Counter } from '../components/Counter.js'
+
+import type { FilePageOptions } from '@pagemint/hono'
+
+interface HomeRawData {
   title: string
   items: string[]
+  counterStart: number
 }
 
-export function HomePage({ title, items }: HomePageProps) {
-  return (
-    <Layout title={title}>
+interface HomeModel {
+  title: string
+  items: string[]
+  counterStart: number
+}
+
+export default {
+  cache: {
+    ttl: 60_000,
+    staleTtl: 5 * 60_000,
+    tags: ['homepage'],
+    modelHash: (model) => model.items.join('|'),
+  },
+  async load() {
+    return {
+      title: 'PageMint v1',
+      items: ['Server JSX', 'HTML Cache', 'Revalidate', 'Islands', 'File Routing'],
+      counterStart: 1,
+    }
+  },
+  normalize(raw) {
+    return {
+      title: raw.title,
+      items: raw.items.map((item) => item.trim()).filter(Boolean),
+      counterStart: raw.counterStart,
+    }
+  },
+  dependencies() {
+    return [
+      'homepage',
+      {
+        id: 'movie:featured',
+        affects: ['homepage', 'search'],
+      },
+    ]
+  },
+  render({ data }) {
+    return (
       <main>
-        <h1>{title}</h1>
+        <h1>{data.title}</h1>
         <p>Server JSX rendered once, cached by route, and sent as HTML.</p>
         <ul>
-          {items.map((item) => (
+          {data.items.map((item) => (
             <li>{item}</li>
           ))}
         </ul>
-        <Button action="demo.toast" payload={{ message: 'Hello from data-action' }}>
-          Try action
-        </Button>
+        <Island id="counter" client="vanilla" props={{ initial: data.counterStart }}>
+          <Counter initial={data.counterStart} />
+        </Island>
       </main>
-    </Layout>
-  )
-}
+    )
+  },
+} satisfies FilePageOptions<HomeRawData, HomeModel>
 `
 }
 
 function layoutSource(): string {
-  return `import type { Child } from 'hono/jsx'
+  return `import type { FileLayoutProps } from '@pagemint/hono'
 
-export interface LayoutProps {
-  title: string
-  children: Child
-}
-
-export function Layout({ title, children }: LayoutProps) {
+export default function Layout({ children }: FileLayoutProps) {
   return (
     <html lang="en">
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{title}</title>
-        <script type="module" src="/static/actions.js"></script>
+        <title>PageMint v1</title>
+        <script type="module" src="/static/islands.js"></script>
       </head>
       <body>{children}</body>
     </html>
@@ -203,45 +223,41 @@ export function Layout({ title, children }: LayoutProps) {
 `
 }
 
-function buttonSource(): string {
-  return `import { ActionButton } from '@pagemint/actions'
-import type { Child } from 'hono/jsx'
-
-export interface ButtonProps {
-  action: string
-  payload?: unknown
-  children: Child
+function counterSource(): string {
+  return `export interface CounterProps {
+  initial: number
 }
 
-export function Button(props: ButtonProps) {
-  return <ActionButton {...props} />
+export function Counter({ initial }: CounterProps) {
+  return (
+    <button type="button" data-counter>
+      Count: {initial}
+    </button>
+  )
 }
 `
 }
 
-function actionsSource(): string {
-  return `const actions = new Map()
+function islandsSource(): string {
+  return `function counter({ el, props, signal }) {
+  const count = signal(Number(props?.initial ?? 0))
+  const button = el.querySelector('[data-counter]')
+  if (!button) return
 
-export function registerAction(name, handler) {
-  actions.set(name, handler)
+  count.subscribe((value) => {
+    button.textContent = \`Count: \${value}\`
+  })
+  button.addEventListener('click', () => {
+    count.value += 1
+  })
 }
 
-document.addEventListener('click', async (event) => {
-  const el = event.target.closest('[data-action]')
-  if (!el) return
+window.PageMintIslands = {
+  ...window.PageMintIslands,
+  counter,
+}
 
-  const action = el.dataset.action
-  const handler = actions.get(action)
-  if (!handler) return
-
-  event.preventDefault()
-  const payload = el.dataset.payload ? JSON.parse(el.dataset.payload) : undefined
-  await handler({ payload, el, event })
-})
-
-registerAction('demo.toast', ({ payload }) => {
-  alert(payload.message)
-})
+window.PageMint?.registerIsland?.('counter', counter)
 `
 }
 

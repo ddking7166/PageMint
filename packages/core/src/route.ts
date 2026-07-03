@@ -1,6 +1,8 @@
 import type { DefinePageOptions, RegisteredPage } from './types.js'
 
-export function definePage<TData>(options: DefinePageOptions<TData>): DefinePageOptions<TData> {
+export function definePage<TRawData, TModel = TRawData>(
+  options: DefinePageOptions<TRawData, TModel>,
+): DefinePageOptions<TRawData, TModel> {
   return options
 }
 

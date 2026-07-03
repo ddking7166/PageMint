@@ -22,4 +22,30 @@ describe('definePage types', () => {
 
     expect(page.path).toBe('/')
   })
+
+  it('infers render data from normalize output', () => {
+    const page = definePage({
+      path: '/normalize',
+      load() {
+        return {
+          title: 'Typed Page',
+        }
+      },
+      normalize(raw) {
+        expectTypeOf(raw.title).toEqualTypeOf<string>()
+        return {
+          title: raw.title,
+          count: 1,
+        }
+      },
+      render({ data, model }) {
+        expectTypeOf(data.title).toEqualTypeOf<string>()
+        expectTypeOf(data.count).toEqualTypeOf<number>()
+        expectTypeOf(model).toEqualTypeOf(data)
+        return <html><body>{data.title}</body></html>
+      },
+    })
+
+    expect(page.path).toBe('/normalize')
+  })
 })

@@ -30,6 +30,9 @@ export function fileCache(options: FileCacheOptions): CacheStore {
         }
 
         const { key: _key, ...entryMeta } = meta
+        if (!entryMeta.modelHash && entryMeta.dataHash) {
+          entryMeta.modelHash = entryMeta.dataHash
+        }
         return {
           ...entryMeta,
           html,
@@ -52,10 +55,13 @@ export function fileCache(options: FileCacheOptions): CacheStore {
       }
 
       if (entry.dataHash !== undefined) meta.dataHash = entry.dataHash
+      if (entry.modelHash !== undefined) meta.modelHash = entry.modelHash
+      if (entry.storeSnapshot !== undefined) meta.storeSnapshot = entry.storeSnapshot
       if (entry.expireAt !== undefined) meta.expireAt = entry.expireAt
       if (entry.staleAt !== undefined) meta.staleAt = entry.staleAt
       if (entry.status !== undefined) meta.status = entry.status
       if (entry.tags !== undefined) meta.tags = entry.tags
+      if (entry.dependencies !== undefined) meta.dependencies = entry.dependencies
       if (entry.headers !== undefined) meta.headers = entry.headers
 
       await Promise.all([

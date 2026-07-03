@@ -14,6 +14,12 @@ export interface PageMintHonoApp extends Hono {
   revalidate(pathOrUrl: string): Promise<CacheEntry | null>
   revalidateByKey(key: string): Promise<CacheEntry | null>
   revalidateTag(tag: string): Promise<CacheEntry[]>
+  invalidateTag(tag: string): Promise<CacheEntry[]>
+  addDependency(source: string, target: string): PageMintHonoApp
+  revalidateDependency(dependency: string): Promise<CacheEntry[]>
+  invalidateDependency(dependency: string): Promise<CacheEntry[]>
+  revalidateStore(scope: string): Promise<CacheEntry[]>
+  invalidateStore(scope: string): Promise<CacheEntry[]>
   invalidate(pathOrUrl: string): Promise<void>
   invalidateByKey(key: string): Promise<void>
   revalidator: Revalidator
@@ -59,6 +65,15 @@ export function createPageMintApp(options: CreatePageMintAppOptions = {}): PageM
   app.revalidate = (pathOrUrl) => engine.revalidate(pathOrUrl)
   app.revalidateByKey = (key) => engine.revalidateByKey(key)
   app.revalidateTag = (tag) => engine.revalidateTag(tag)
+  app.invalidateTag = (tag) => engine.invalidateTag(tag)
+  app.addDependency = (source, target) => {
+    engine.addDependency(source, target)
+    return app
+  }
+  app.revalidateDependency = (dependency) => engine.revalidateDependency(dependency)
+  app.invalidateDependency = (dependency) => engine.invalidateDependency(dependency)
+  app.revalidateStore = (scope) => engine.revalidateStore(scope)
+  app.invalidateStore = (scope) => engine.invalidateStore(scope)
   app.invalidate = (pathOrUrl) => engine.invalidate(pathOrUrl)
   app.invalidateByKey = (key) => engine.invalidateByKey(key)
 

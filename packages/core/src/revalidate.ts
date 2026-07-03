@@ -1,4 +1,4 @@
-import { createCacheEntry, refreshCacheEntry } from './cache.js'
+import { cacheEntryModelHash, createCacheEntry, refreshCacheEntry } from './cache.js'
 import { renderPageResult } from './renderer.js'
 
 import type {
@@ -9,9 +9,11 @@ import type {
   Revalidator,
   RevalidatorTask,
 } from './types.js'
+import type { PMStore } from './store.js'
 
 export interface PageMintRevalidatorOptions {
   cache?: CacheStore
+  store?: PMStore
   now: () => number
   onError?: (error: unknown, context: PageMintErrorContext) => void
 }
@@ -101,9 +103,21 @@ export class PageMintRevalidator implements Revalidator {
     try {
       const result = await task.check()
       const previousEntry = await cache.get(result.key)
+      const modelHash = result.modelHash ?? result.hash
+      const previousHash = cacheEntryModelHash(previousEntry)
 
-      if (previousEntry?.dataHash && result.hash && previousEntry.dataHash === result.hash) {
-        await cache.set(result.key, refreshExternalEntry(previousEntry, result, this.options.now()))
+      if (previousEntry && previousHash && modelHash && previousHash === modelHash) {
+        await cache.set(
+          result.key,
+          refreshExternalEntry(
+            {
+              ...previousEntry,
+              storeSnapshot: this.options.store?.snapshot(),
+            },
+            result,
+            this.options.now(),
+          ),
+        )
         return
       }
 
@@ -111,12 +125,14 @@ export class PageMintRevalidator implements Revalidator {
         key: result.key,
         data: result.data,
         hash: result.hash,
+        modelHash,
         previousEntry,
       })
       const pageResult = await renderPageResult(rendered)
       const entry = createCacheEntry({
         html: pageResult.html,
-        dataHash: result.hash,
+        modelHash,
+        storeSnapshot: this.options.store?.snapshot(),
         cache: { ttl: result.ttl, staleTtl: result.staleTtl },
         now: this.options.now(),
         status: pageResult.status,
