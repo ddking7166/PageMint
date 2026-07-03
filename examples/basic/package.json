@@ -1,0 +1,22 @@
+{
+  "name": "@pagemint/example-basic",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @pagemint/core --filter @pagemint/hono --filter @pagemint/cache-memory --filter @pagemint/actions build && tsx watch src/app.tsx",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/app.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.0.6",
+    "@pagemint/actions": "workspace:*",
+    "@pagemint/cache-memory": "workspace:*",
+    "@pagemint/hono": "workspace:*",
+    "hono": "^4.12.27"
+  },
+  "devDependencies": {
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

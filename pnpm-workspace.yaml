@@ -1,0 +1,13 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "examples/*"
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - bun
+  - esbuild
+allowBuilds:
+  '@parcel/watcher': true
+  bun: true
+  esbuild: true

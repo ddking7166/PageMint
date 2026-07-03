@@ -1,0 +1,39 @@
+{
+  "name": "@pagemint/app-pc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @pagemint/core --filter @pagemint/hono --filter @pagemint/cache-memory --filter @pagemint/actions build && pnpm run assets:build:raw && tsx watch src/server.tsx",
+    "dev:bun": "pnpm --filter @pagemint/core --filter @pagemint/hono --filter @pagemint/cache-memory --filter @pagemint/actions build && pnpm run assets:build:raw && bun run src/server.bun.ts",
+    "build": "pnpm run assets:build && tsc -p tsconfig.json",
+    "sdk:build": "pnpm --filter @pagemint/core --filter @pagemint/hono build",
+    "assets:build": "pnpm run sdk:build && pnpm run assets:build:raw",
+    "assets:build:raw": "tsx src/config/build-assets.ts",
+    "assets:watch": "pnpm run sdk:build && pnpm run assets:watch:raw",
+    "assets:watch:raw": "tsx src/config/build-assets.ts --watch",
+    "styles:build": "pnpm run assets:build",
+    "styles:watch": "pnpm run assets:watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/server.js",
+    "start:bun": "bun run dist/server.bun.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.0.6",
+    "@pagemint/actions": "workspace:*",
+    "@pagemint/cache-memory": "workspace:*",
+    "@pagemint/hono": "workspace:*",
+    "crypto-js": "^4.2.0",
+    "hls.js": "^1.6.16",
+    "hono": "^4.12.27"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/node": "^24.0.0",
+    "bun": "^1.3.14",
+    "tailwindcss": "^4.3.2",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.2"
+  }
+}

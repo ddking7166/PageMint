@@ -1,0 +1,15 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/hono" },
+    { "path": "./packages/cache-memory" },
+    { "path": "./packages/cache-file" },
+    { "path": "./packages/cache-redis" },
+    { "path": "./packages/actions" },
+    { "path": "./packages/cli" },
+    { "path": "./apps/pc" },
+    { "path": "./examples/basic" },
+    { "path": "./examples/content-site" }
+  ]
+}
